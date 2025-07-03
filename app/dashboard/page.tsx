@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Plus,
   Eye,
@@ -19,11 +21,20 @@ import {
   Download,
   Edit,
   Trash2,
+  Check,
+  X,
+  Calendar,
+  MoreHorizontal,
+  Filter,
+  Search,
+  ArrowUpRight,
+  Sparkles,
 } from "lucide-react"
 import { useOffers, useActOnOffer } from "@/lib/api"
-import DataTable from "@/components/advanced-data-table"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
+import Link from "next/link"
 
+// Mock data for demonstration
 const userProjects = [
   {
     id: 1,
@@ -34,7 +45,8 @@ const userProjects = [
     likes: 45,
     offers: 3,
     listedDate: "2024-01-15",
-    image: "/placeholder.svg?height=100&width=150",
+    image: "/placeholder.jpg",
+    healthScore: 78,
   },
   {
     id: 2,
@@ -45,7 +57,8 @@ const userProjects = [
     likes: 0,
     offers: 0,
     listedDate: null,
-    image: "/placeholder.svg?height=100&width=150",
+    image: "/placeholder.jpg",
+    healthScore: 72,
   },
 ]
 
@@ -57,7 +70,7 @@ const purchases = [
     price: 5500,
     seller: "Sarah Johnson",
     status: "Completed",
-    image: "/placeholder.svg?height=100&width=150",
+    image: "/placeholder.jpg",
   },
   {
     id: 2,
@@ -66,18 +79,18 @@ const purchases = [
     price: 3200,
     seller: "Mike Chen",
     status: "In Progress",
-    image: "/placeholder.svg?height=100&width=150",
+    image: "/placeholder.jpg",
   },
 ]
 
-const watchlist = [
+const favorites = [
   {
     id: 1,
     name: "FitnessPal Clone",
     price: 2800,
     healthScore: 75,
     priceChange: "+5%",
-    image: "/placeholder.svg?height=100&width=150",
+    image: "/placeholder.jpg",
   },
   {
     id: 2,
@@ -85,480 +98,505 @@ const watchlist = [
     price: 4200,
     healthScore: 85,
     priceChange: "-2%",
-    image: "/placeholder.svg?height=100&width=150",
-  },
-]
-
-const recentActivity = [
-  {
-    type: "offer",
-    message: "New offer received for TaskFlow Pro",
-    time: "2 hours ago",
-    amount: "$2,800",
-  },
-  {
-    type: "view",
-    message: "Your project DataViz Dashboard was viewed 15 times",
-    time: "5 hours ago",
-  },
-  {
-    type: "purchase",
-    message: "Purchase of AI Content Generator completed",
-    time: "1 day ago",
-  },
-  {
-    type: "like",
-    message: "TaskFlow Pro received 3 new likes",
-    time: "2 days ago",
+    image: "/placeholder.jpg",
   },
 ]
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
-  const [tab, setTab] = useState<"received" | "sent">("received")
-  const {
-    data: receivedOffers,
-    isLoading: loadingReceived,
-    error: errorReceived,
-  } = useOffers(true)
-  const {
-    data: sentOffers,
-    isLoading: loadingSent,
-    error: errorSent,
-  } = useOffers(false)
-  const { mutate: actOnOffer, isLoading: actLoading } = useActOnOffer()
-  const toast = useToast()
+  const { mutate: actOnOffer, isPending: actLoading } = useActOnOffer()
 
-  function handleAction(id: string, action: "accept" | "reject") {
+  const handleOfferAction = (id: string, action: "accept" | "reject") => {
     actOnOffer(
       { id, action },
       {
-        onSuccess: () =>
-          toast.toast({ title: `Offer ${action}ed!` }),
-        onError: () =>
-          toast.toast({ title: "Error", variant: "destructive" }),
+        onSuccess: () => {
+          toast.success(`Offer ${action}ed successfully!`)
+        },
+        onError: () => {
+          toast.error(`Failed to ${action} offer`)
+        },
       }
     )
   }
 
   return (
-    <div className="pt-16 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-background pt-16">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Welcome back, <span className="gradient-text">Alex</span>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              Dashboard
             </h1>
-            <p className="text-gray-300">
+            <p className="mt-2 text-lg text-muted-foreground">
               Manage your projects and track your marketplace activity
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
-            <Plus className="w-4 h-4 mr-2" />
-            List New Project
-          </Button>
+          
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm">
+              <Bell className="w-4 h-4 mr-2" />
+              Notifications
+            </Button>
+            <Link href="/sell">
+              <Button className="group">
+                <Plus className="w-4 h-4 mr-2" />
+                List New Project
+                <ArrowUpRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="glass border-white/10">
+          <Card className="border-0 bg-gradient-to-br from-green-500/10 to-green-600/5">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Total Earnings</p>
-                  <p className="text-2xl font-bold gradient-text">
-                    {(8700).toLocaleString()}
+                  <p className="text-sm font-medium text-muted-foreground">Total Earnings</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    ${(8700).toLocaleString()}
                   </p>
+                  <p className="text-xs text-green-600 mt-1">+12% from last month</p>
                 </div>
-                <DollarSign className="w-8 h-8 text-green-400" />
+                <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="glass border-white/10">
+          <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Active Listings</p>
-                  <p className="text-2xl font-bold text-white">2</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Listings</p>
+                  <p className="text-2xl font-bold text-foreground">2</p>
+                  <p className="text-xs text-blue-600 mt-1">1 pending review</p>
                 </div>
-                <Eye className="w-8 h-8 text-blue-400" />
+                <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-blue-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="glass border-white/10">
+          <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-purple-600/5">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Total Views</p>
-                  <p className="text-2xl font-bold text-white">
+                  <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                  <p className="text-2xl font-bold text-foreground">
                     {(1250).toLocaleString()}
                   </p>
+                  <p className="text-xs text-purple-600 mt-1">+8% this week</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-purple-400" />
+                <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="glass border-white/10">
+          <Card className="border-0 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Pending Offers</p>
-                  <p className="text-2xl font-bold text-white">3</p>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Offers</p>
+                  <p className="text-2xl font-bold text-foreground">3</p>
+                  <p className="text-xs text-orange-600 mt-1">2 new today</p>
                 </div>
-                <MessageSquare className="w-8 h-8 text-orange-400" />
+                <div className="h-12 w-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-orange-600" />
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-4 bg-white/5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="projects">My Projects</TabsTrigger>
-                <TabsTrigger value="purchases">Purchases</TabsTrigger>
-                <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
-              </TabsList>
+        <Card className="border-0 bg-muted/30">
+          <CardContent className="p-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="border-b px-6 pt-6">
+                <TabsList className="grid w-full grid-cols-5 bg-background/50">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="projects">My Projects</TabsTrigger>
+                  <TabsTrigger value="offers-received">Offers Received</TabsTrigger>
+                  <TabsTrigger value="offers-sent">Offers Sent</TabsTrigger>
+                  <TabsTrigger value="favorites">Favorites</TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value="overview" className="mt-6">
-                <div className="space-y-6">
+              <TabsContent value="overview" className="p-6">
+                <div className="space-y-8">
                   {/* Recent Activity */}
-                  <Card className="glass border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white">Recent Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {recentActivity.map((activity, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center space-x-3 p-3 rounded-lg bg-white/5"
-                          >
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                activity.type === "offer"
-                                  ? "bg-green-400"
-                                  : activity.type === "view"
-                                  ? "bg-blue-400"
-                                  : activity.type === "purchase"
-                                  ? "bg-purple-400"
-                                  : "bg-yellow-400"
-                              }`}
-                            />
-                            <div className="flex-1">
-                              <p className="text-white text-sm">
-                                {activity.message}
-                              </p>
-                              <p className="text-gray-400 text-xs">
-                                {activity.time}
-                              </p>
-                            </div>
-                            {activity.amount && (
-                              <Badge className="bg-green-500/20 text-green-400">
-                                {activity.amount}
-                              </Badge>
-                            )}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      Recent Activity
+                    </h3>
+                    <div className="space-y-4">
+                      {[
+                        {
+                          type: "offer",
+                          message: "New offer received for TaskFlow Pro",
+                          time: "2 hours ago",
+                          amount: "$2,800",
+                          status: "new"
+                        },
+                        {
+                          type: "view",
+                          message: "Your project DataViz Dashboard was viewed 15 times",
+                          time: "5 hours ago",
+                          status: "info"
+                        },
+                        {
+                          type: "purchase",
+                          message: "Purchase of AI Content Generator completed",
+                          time: "1 day ago",
+                          status: "success"
+                        },
+                        {
+                          type: "like",
+                          message: "TaskFlow Pro received 3 new likes",
+                          time: "2 days ago",
+                          status: "info"
+                        },
+                      ].map((activity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-4 p-4 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+                        >
+                          <div className={`w-2 h-2 rounded-full ${
+                            activity.status === "new" ? "bg-orange-500" :
+                            activity.status === "success" ? "bg-green-500" :
+                            "bg-blue-500"
+                          }`} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {activity.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {activity.time}
+                            </p>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          {activity.amount && (
+                            <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                              {activity.amount}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      Quick Actions
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="border-0 bg-background/50 hover:bg-background/80 transition-colors cursor-pointer group">
+                        <CardContent className="p-6 text-center">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
+                            <Plus className="w-6 h-6 text-primary" />
+                          </div>
+                          <h4 className="font-semibold text-foreground mb-2">List New Project</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Add a new project to the marketplace
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-0 bg-background/50 hover:bg-background/80 transition-colors cursor-pointer group">
+                        <CardContent className="p-6 text-center">
+                          <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-500/20 transition-colors">
+                            <Search className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <h4 className="font-semibold text-foreground mb-2">Browse Projects</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Discover new acquisition opportunities
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-0 bg-background/50 hover:bg-background/80 transition-colors cursor-pointer group">
+                        <CardContent className="p-6 text-center">
+                          <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-500/20 transition-colors">
+                            <Sparkles className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <h4 className="font-semibold text-foreground mb-2">AI Valuation</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Get AI-powered project valuations
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="projects" className="mt-6">
-                <Card className="glass border-white/10">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-white">My Projects</CardTitle>
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-purple-500 to-blue-500"
-                      >
+              <TabsContent value="projects" className="p-6">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-foreground">My Projects</h3>
+                    <Link href="/sell">
+                      <Button size="sm">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Project
                       </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {userProjects.map((project) => (
-                        <div
-                          key={project.id}
-                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
-                        >
-                          <img
-                            src={project.image || "/placeholder.svg"}
-                            alt={project.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-white">
-                              {project.name}
-                            </h3>
-                            <div className="flex items-center space-x-4 mt-1">
+                    </Link>
+                  </div>
+
+                  <div className="rounded-lg border border-border/50 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/50 hover:bg-muted/50">
+                          <TableHead>Project</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Views</TableHead>
+                          <TableHead>Offers</TableHead>
+                          <TableHead>Health</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userProjects.map((project) => (
+                          <TableRow key={project.id} className="border-border/50 hover:bg-muted/50">
+                            <TableCell>
+                              <div className="flex items-center space-x-3">
+                                <img
+                                  src={project.image}
+                                  alt={project.name}
+                                  className="w-10 h-10 rounded-lg object-cover"
+                                />
+                                <div>
+                                  <div className="font-medium text-foreground">{project.name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {project.listedDate ? `Listed ${project.listedDate}` : "Draft"}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <Badge
-                                variant={
-                                  project.status === "Listed"
-                                    ? "default"
-                                    : "secondary"
-                                }
+                                variant={project.status === "Listed" ? "default" : "secondary"}
                               >
                                 {project.status}
                               </Badge>
-                              <span className="text-sm text-gray-400">
-                                ${project.price.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-400">
-                            <div className="flex items-center">
-                              <Eye className="w-4 h-4 mr-1" />
-                              {project.views}
-                            </div>
-                            <div className="flex items-center">
-                              <Heart className="w-4 h-4 mr-1" />
-                              {project.likes}
-                            </div>
-                            <div className="flex items-center">
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              {project.offers}
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-white/20 bg-transparent"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-white/20 hover:border-red-500/50 hover:text-red-400 bg-transparent"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              ${project.price.toLocaleString()}
+                            </TableCell>
+                            <TableCell>{project.views}</TableCell>
+                            <TableCell>{project.offers}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <div className="text-sm font-medium">{project.healthScore}%</div>
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                                    style={{ width: `${project.healthScore}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </TabsContent>
 
-              <TabsContent value="purchases" className="mt-6">
-                <Card className="glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white">Purchase History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {purchases.map((purchase) => (
-                        <div
-                          key={purchase.id}
-                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
-                        >
-                          <img
-                            src={purchase.image || "/placeholder.svg"}
-                            alt={purchase.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-white">
-                              {purchase.name}
-                            </h3>
-                            <p className="text-sm text-gray-400">
-                              Seller: {purchase.seller}
-                            </p>
-                            <p className="text-sm text-gray-400">
-                              Purchased: {purchase.purchaseDate}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-semibold text-white">
-                              ${purchase.price.toLocaleString()}
-                            </div>
-                            <Badge
-                              variant={
-                                purchase.status === "Completed"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {purchase.status}
-                            </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-white/20 bg-transparent"
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+              <TabsContent value="offers-received" className="p-6">
+                <OffersTable type="received" onAction={handleOfferAction} loading={actLoading} />
               </TabsContent>
 
-              <TabsContent value="watchlist" className="mt-6">
-                <Card className="glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white">Watchlist</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {watchlist.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
-                        >
-                          <img
-                            src={item.image || "/placeholder.svg"}
-                            alt={item.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-white">{item.name}</h3>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-sm text-gray-400">
-                                Health Score: {item.healthScore}
-                              </span>
-                              <Badge
-                                variant={item.priceChange.startsWith("+")
-                                  ? "destructive"
-                                  : "default"}
-                              >
-                                {item.priceChange}
-                              </Badge>
-                            </div>
+              <TabsContent value="offers-sent" className="p-6">
+                <OffersTable type="sent" onAction={handleOfferAction} loading={actLoading} />
+              </TabsContent>
+
+              <TabsContent value="favorites" className="p-6">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-foreground">Favorite Projects</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {favorites.map((item) => (
+                      <Card key={item.id} className="border-0 bg-background/50 hover:bg-background/80 transition-all hover:scale-105 group">
+                        <CardContent className="p-0">
+                          <div className="aspect-video overflow-hidden rounded-t-lg">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            />
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-semibold gradient-text">
-                              ${item.price.toLocaleString()}
+                          <div className="p-4">
+                            <h4 className="font-semibold text-foreground mb-2">{item.name}</h4>
+                            <div className="flex items-center justify-between">
+                              <div className="text-lg font-bold text-foreground">
+                                ${item.price.toLocaleString()}
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge
+                                  variant={item.priceChange.startsWith("+") ? "destructive" : "default"}
+                                  className="text-xs"
+                                >
+                                  {item.priceChange}
+                                </Badge>
+                              </div>
                             </div>
+                            <div className="mt-2 text-sm text-muted-foreground">
+                              Health Score: {item.healthScore}%
+                            </div>
+                            <Button className="w-full mt-4" size="sm">
+                              View Details
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-purple-500 to-blue-500"
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Profile Card */}
-            <Card className="glass border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Profile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src="/placeholder.svg?height=48&width=48" />
-                    <AvatarFallback>AC</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-white">Alex Chen</h3>
-                    <div className="flex items-center text-sm text-gray-400">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                      4.9 (12 reviews)
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full border-white/20 hover:bg-white/10 bg-transparent"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </Button>
-              </CardContent>
-            </Card>
+function OffersTable({ 
+  type, 
+  onAction, 
+  loading 
+}: { 
+  type: "received" | "sent"
+  onAction: (id: string, action: "accept" | "reject") => void
+  loading: boolean
+}) {
+  // Mock data - in real app this would come from the API
+  const offers = [
+    {
+      id: "1",
+      project: "TaskFlow Pro",
+      amount: 2800,
+      buyer: "Sarah Johnson",
+      seller: "Alex Chen",
+      status: "pending",
+      date: "2024-01-15",
+      avatar: "/placeholder.svg",
+    },
+    {
+      id: "2",
+      project: "DataViz Dashboard",
+      amount: 1500,
+      buyer: "Mike Rodriguez",
+      seller: "Alex Chen",
+      status: "accepted",
+      date: "2024-01-10",
+      avatar: "/placeholder.svg",
+    },
+  ]
 
-            {/* Quick Actions */}
-            <Card className="glass border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-white/10"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    List New Project
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-white/10"
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Browse Marketplace
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-white/10"
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Messages
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start hover:bg-white/10"
-                  >
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-foreground">
+        {type === "received" ? "Offers Received" : "Offers Sent"}
+      </h3>
 
-            {/* Tips */}
-            <Card className="glass border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">Pro Tips</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                    <p className="text-purple-300">
-                      Add detailed screenshots to increase project views by 40%
-                    </p>
+      <div className="rounded-lg border border-border/50 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/50 hover:bg-muted/50">
+              <TableHead>Project</TableHead>
+              <TableHead>{type === "received" ? "Buyer" : "Seller"}</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              {type === "received" && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {offers.map((offer) => (
+              <TableRow key={offer.id} className="border-border/50 hover:bg-muted/50">
+                <TableCell>
+                  <div className="font-medium text-foreground">{offer.project}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={offer.avatar} />
+                      <AvatarFallback>
+                        {(type === "received" ? offer.buyer : offer.seller).charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-foreground">
+                      {type === "received" ? offer.buyer : offer.seller}
+                    </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-blue-300">
-                      Projects with complete documentation sell 60% faster
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                </TableCell>
+                <TableCell className="font-medium">
+                  ${offer.amount.toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      offer.status === "pending"
+                        ? "secondary"
+                        : offer.status === "accepted"
+                        ? "default"
+                        : "destructive"
+                    }
+                  >
+                    {offer.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{offer.date}</TableCell>
+                {type === "received" && (
+                  <TableCell className="text-right">
+                    {offer.status === "pending" && (
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onAction(offer.id, "reject")}
+                          disabled={loading}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => onAction(offer.id, "accept")}
+                          disabled={loading}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

@@ -1,0 +1,20 @@
+name: Launch QA Checklist
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Ensure launch checklist complete
+        run: |
+          unmet=$(grep -c "\[ \]" docs/LAUNCH_QA_CHECKLIST.md || true)
+          if [ "$unmet" -gt 0 ]; then
+            echo "::error::Launch QA checklist incomplete ($unmet items)"
+            exit 1
+          fi

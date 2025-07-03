@@ -1,0 +1,448 @@
+openapi: 3.1.0
+info:
+  title: ReviveForge API
+  version: 1.0.0
+  description: |
+    ReviveForge is a marketplace for discovering, valuing, and relaunching abandoned digital projects. This API powers all backend operations, including project listings, offers, payments, AI valuation, and user management.
+servers:
+  - url: https://{VERCEL_URL}/api
+    variables:
+      VERCEL_URL:
+        default: your-vercel-deployment-url
+security:
+  - supabaseAuth: []
+  - stripeSignature: []
+paths:
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List and filter projects
+      parameters:
+        - in: query
+          name: techStack
+          schema: { type: array, items: { type: string } }
+        - in: query
+          name: minPrice
+          schema: { type: integer }
+        - in: query
+          name: maxPrice
+          schema: { type: integer }
+        - in: query
+          name: minHealth
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: pageSize
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  count:
+                    type: integer
+    post:
+      tags: [Projects]
+      summary: Create a new project
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+  /projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Get project by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    put:
+      tags: [Projects]
+      summary: Update project
+      security:
+        - supabaseAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      security:
+        - supabaseAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Project deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+  /offers:
+    get:
+      tags: [Offers]
+      summary: List offers (made or received)
+      security:
+        - supabaseAuth: []
+      parameters:
+        - in: query
+          name: received
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: List of offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Offer'
+    post:
+      tags: [Offers]
+      summary: Place an offer
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+      responses:
+        '201':
+          description: Offer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offer'
+  /offers/{id}:
+    put:
+      tags: [Offers]
+      summary: Accept or reject an offer
+      security:
+        - supabaseAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferAction'
+      responses:
+        '200':
+          description: Offer updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientSecret:
+                    type: string
+                  success:
+                    type: boolean
+  /stripe/webhooks:
+    post:
+      tags: [Payments]
+      summary: Stripe webhook endpoint
+      security:
+        - stripeSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: List user favorites
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: List of favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Favorite'
+    post:
+      tags: [Favorites]
+      summary: Add a favorite
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteCreate'
+      responses:
+        '201':
+          description: Favorite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+  /favorites/{id}:
+    delete:
+      tags: [Favorites]
+      summary: Remove a favorite
+      security:
+        - supabaseAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Favorite deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+  /ai/valuate:
+    post:
+      tags: [AI]
+      summary: AI valuation for a GitHub repo
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiValuationRequest'
+      responses:
+        '200':
+          description: AI analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiAnalysis'
+  /user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      security:
+        - supabaseAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+    put:
+      tags: [User]
+      summary: Update user profile
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+  /github/scrape:
+    get:
+      tags: [GitHub]
+      summary: Cron job to discover abandoned repos
+      responses:
+        '200':
+          description: Discovery result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  discoveredCount:
+                    type: integer
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT Bearer token
+    stripeSignature:
+      type: apiKey
+      in: header
+      name: stripe-signature
+      description: Stripe webhook signature header
+  schemas:
+    Project:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        seller_id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        github_url: { type: string }
+        tech_stack: { type: array, items: { type: string } }
+        health_score: { type: integer }
+        value_min: { type: integer }
+        value_max: { type: integer }
+        ai_analysis: { $ref: '#/components/schemas/AiAnalysis' }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProjectCreate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        github_url: { type: string }
+        tech_stack: { type: array, items: { type: string } }
+        health_score: { type: integer }
+        value_min: { type: integer }
+        value_max: { type: integer }
+        status: { type: string }
+    ProjectUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ProjectCreate'
+    Offer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        buyer_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        amount: { type: integer }
+        status: { type: string, enum: [pending, accepted, rejected] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OfferCreate:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+        amount: { type: integer }
+    OfferAction:
+      type: object
+      properties:
+        action: { type: string, enum: [accept, reject] }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        offer_id: { type: string, format: uuid }
+        stripe_payment_intent_id: { type: string }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+    Favorite:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    FavoriteCreate:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+    Profile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        stripe_account_id: { type: string }
+        user_type: { type: string, enum: [buyer, seller] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProfileUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        bio: { type: string }
+        website: { type: string }
+    AiValuationRequest:
+      type: object
+      properties:
+        githubUrl: { type: string }
+    AiAnalysis:
+      type: object
+      properties:
+        healthScore: { type: integer }
+        valueMin: { type: integer }
+        valueMax: { type: integer }
+        difficultyRating: { type: integer }
+        analysisSummary: { type: string }

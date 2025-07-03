@@ -20,6 +20,9 @@ import {
   Edit,
   Trash2,
 } from "lucide-react"
+import { useOffers, useActOnOffer } from "@/lib/api"
+import DataTable from "@/components/advanced-data-table"
+import { useToast } from "@/hooks/use-toast"
 
 const userProjects = [
   {
@@ -112,6 +115,31 @@ const recentActivity = [
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [tab, setTab] = useState<"received" | "sent">("received")
+  const {
+    data: receivedOffers,
+    isLoading: loadingReceived,
+    error: errorReceived,
+  } = useOffers(true)
+  const {
+    data: sentOffers,
+    isLoading: loadingSent,
+    error: errorSent,
+  } = useOffers(false)
+  const { mutate: actOnOffer, isLoading: actLoading } = useActOnOffer()
+  const toast = useToast()
+
+  function handleAction(id: string, action: "accept" | "reject") {
+    actOnOffer(
+      { id, action },
+      {
+        onSuccess: () =>
+          toast.toast({ title: `Offer ${action}ed!` }),
+        onError: () =>
+          toast.toast({ title: "Error", variant: "destructive" }),
+      }
+    )
+  }
 
   return (
     <div className="pt-16 min-h-screen">
@@ -122,7 +150,9 @@ export default function DashboardPage() {
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               Welcome back, <span className="gradient-text">Alex</span>
             </h1>
-            <p className="text-gray-300">Manage your projects and track your marketplace activity</p>
+            <p className="text-gray-300">
+              Manage your projects and track your marketplace activity
+            </p>
           </div>
           <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
             <Plus className="w-4 h-4 mr-2" />
@@ -137,7 +167,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Earnings</p>
-                  <p className="text-2xl font-bold gradient-text">$8,700</p>
+                  <p className="text-2xl font-bold gradient-text">
+                    {(8700).toLocaleString()}
+                  </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-green-400" />
               </div>
@@ -161,7 +193,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Views</p>
-                  <p className="text-2xl font-bold text-white">1,250</p>
+                  <p className="text-2xl font-bold text-white">
+                    {(1250).toLocaleString()}
+                  </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-purple-400" />
               </div>
@@ -184,7 +218,11 @@ export default function DashboardPage() {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-4 bg-white/5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="projects">My Projects</TabsTrigger>
@@ -202,24 +240,33 @@ export default function DashboardPage() {
                     <CardContent>
                       <div className="space-y-4">
                         {recentActivity.map((activity, index) => (
-                          <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                          <div
+                            key={index}
+                            className="flex items-center space-x-3 p-3 rounded-lg bg-white/5"
+                          >
                             <div
                               className={`w-2 h-2 rounded-full ${
                                 activity.type === "offer"
                                   ? "bg-green-400"
                                   : activity.type === "view"
-                                    ? "bg-blue-400"
-                                    : activity.type === "purchase"
-                                      ? "bg-purple-400"
-                                      : "bg-yellow-400"
+                                  ? "bg-blue-400"
+                                  : activity.type === "purchase"
+                                  ? "bg-purple-400"
+                                  : "bg-yellow-400"
                               }`}
                             />
                             <div className="flex-1">
-                              <p className="text-white text-sm">{activity.message}</p>
-                              <p className="text-gray-400 text-xs">{activity.time}</p>
+                              <p className="text-white text-sm">
+                                {activity.message}
+                              </p>
+                              <p className="text-gray-400 text-xs">
+                                {activity.time}
+                              </p>
                             </div>
                             {activity.amount && (
-                              <Badge className="bg-green-500/20 text-green-400">{activity.amount}</Badge>
+                              <Badge className="bg-green-500/20 text-green-400">
+                                {activity.amount}
+                              </Badge>
                             )}
                           </div>
                         ))}
@@ -234,7 +281,10 @@ export default function DashboardPage() {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-white">My Projects</CardTitle>
-                      <Button size="sm" className="bg-gradient-to-r from-purple-500 to-blue-500">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-blue-500"
+                      >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Project
                       </Button>
@@ -243,19 +293,32 @@ export default function DashboardPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {userProjects.map((project) => (
-                        <div key={project.id} className="flex items-center space-x-4 p-4 rounded-lg bg-white/5">
+                        <div
+                          key={project.id}
+                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
+                        >
                           <img
                             src={project.image || "/placeholder.svg"}
                             alt={project.name}
                             className="w-16 h-16 rounded-lg object-cover"
                           />
                           <div className="flex-1">
-                            <h3 className="font-semibold text-white">{project.name}</h3>
+                            <h3 className="font-semibold text-white">
+                              {project.name}
+                            </h3>
                             <div className="flex items-center space-x-4 mt-1">
-                              <Badge variant={project.status === "Listed" ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  project.status === "Listed"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {project.status}
                               </Badge>
-                              <span className="text-sm text-gray-400">${project.price.toLocaleString()}</span>
+                              <span className="text-sm text-gray-400">
+                                ${project.price.toLocaleString()}
+                              </span>
                             </div>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-400">
@@ -273,7 +336,11 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" className="border-white/20 bg-transparent">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-white/20 bg-transparent"
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button
@@ -299,24 +366,45 @@ export default function DashboardPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {purchases.map((purchase) => (
-                        <div key={purchase.id} className="flex items-center space-x-4 p-4 rounded-lg bg-white/5">
+                        <div
+                          key={purchase.id}
+                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
+                        >
                           <img
                             src={purchase.image || "/placeholder.svg"}
                             alt={purchase.name}
                             className="w-16 h-16 rounded-lg object-cover"
                           />
                           <div className="flex-1">
-                            <h3 className="font-semibold text-white">{purchase.name}</h3>
-                            <p className="text-sm text-gray-400">Seller: {purchase.seller}</p>
-                            <p className="text-sm text-gray-400">Purchased: {purchase.purchaseDate}</p>
+                            <h3 className="font-semibold text-white">
+                              {purchase.name}
+                            </h3>
+                            <p className="text-sm text-gray-400">
+                              Seller: {purchase.seller}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              Purchased: {purchase.purchaseDate}
+                            </p>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-semibold text-white">${purchase.price.toLocaleString()}</div>
-                            <Badge variant={purchase.status === "Completed" ? "default" : "secondary"}>
+                            <div className="text-lg font-semibold text-white">
+                              ${purchase.price.toLocaleString()}
+                            </div>
+                            <Badge
+                              variant={
+                                purchase.status === "Completed"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
                               {purchase.status}
                             </Badge>
                           </div>
-                          <Button size="sm" variant="outline" className="border-white/20 bg-transparent">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-white/20 bg-transparent"
+                          >
                             <Download className="w-4 h-4 mr-2" />
                             Download
                           </Button>
@@ -335,7 +423,10 @@ export default function DashboardPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {watchlist.map((item) => (
-                        <div key={item.id} className="flex items-center space-x-4 p-4 rounded-lg bg-white/5">
+                        <div
+                          key={item.id}
+                          className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
+                        >
                           <img
                             src={item.image || "/placeholder.svg"}
                             alt={item.name}
@@ -344,16 +435,27 @@ export default function DashboardPage() {
                           <div className="flex-1">
                             <h3 className="font-semibold text-white">{item.name}</h3>
                             <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-sm text-gray-400">Health Score: {item.healthScore}</span>
-                              <Badge variant={item.priceChange.startsWith("+") ? "destructive" : "default"}>
+                              <span className="text-sm text-gray-400">
+                                Health Score: {item.healthScore}
+                              </span>
+                              <Badge
+                                variant={item.priceChange.startsWith("+")
+                                  ? "destructive"
+                                  : "default"}
+                              >
                                 {item.priceChange}
                               </Badge>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-lg font-semibold gradient-text">${item.price.toLocaleString()}</div>
+                            <div className="text-lg font-semibold gradient-text">
+                              ${item.price.toLocaleString()}
+                            </div>
                           </div>
-                          <Button size="sm" className="bg-gradient-to-r from-purple-500 to-blue-500">
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-purple-500 to-blue-500"
+                          >
                             View Details
                           </Button>
                         </div>
@@ -386,7 +488,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full border-white/20 hover:bg-white/10 bg-transparent">
+                <Button
+                  variant="outline"
+                  className="w-full border-white/20 hover:bg-white/10 bg-transparent"
+                >
                   <Settings className="w-4 h-4 mr-2" />
                   Edit Profile
                 </Button>
@@ -400,19 +505,31 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Button variant="ghost" className="w-full justify-start hover:bg-white/10">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start hover:bg-white/10"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     List New Project
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start hover:bg-white/10">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start hover:bg-white/10"
+                  >
                     <Eye className="w-4 h-4 mr-2" />
                     Browse Marketplace
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start hover:bg-white/10">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start hover:bg-white/10"
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Messages
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start hover:bg-white/10">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start hover:bg-white/10"
+                  >
                     <Bell className="w-4 h-4 mr-2" />
                     Notifications
                   </Button>
@@ -428,10 +545,14 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="space-y-3 text-sm">
                   <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                    <p className="text-purple-300">Add detailed screenshots to increase project views by 40%</p>
+                    <p className="text-purple-300">
+                      Add detailed screenshots to increase project views by 40%
+                    </p>
                   </div>
                   <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-blue-300">Projects with complete documentation sell 60% faster</p>
+                    <p className="text-blue-300">
+                      Projects with complete documentation sell 60% faster
+                    </p>
                   </div>
                 </div>
               </CardContent>

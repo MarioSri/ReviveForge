@@ -1,30 +1,94 @@
-# Image Analysis
+# ReviveForge
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A turnkey marketplace for discovering, valuing, and relaunching abandoned digital projects.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/mariosris-projects/v0-image-analysis)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/Mwcp6uDYp9M)
+![Architecture Diagram](./docs/architecture.png)
 
-## Overview
+## Features
+- Project discovery, listing, and filtering
+- AI-powered valuation (OpenAI GPT-4)
+- Secure offers, payments (Stripe Connect)
+- Supabase Auth, PostgreSQL, Storage
+- Transactional emails (Resend)
+- Error monitoring (Sentry)
+- Automated GitHub repo discovery (cron)
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Tech Stack
+- Next.js 14 (App Router, TypeScript)
+- Supabase (PostgreSQL, Auth, Storage)
+- Stripe Connect & Billing
+- OpenAI GPT-4
+- Resend
+- Sentry
+
+## Setup
+1. **Clone the repo:**
+   ```sh
+   git clone https://github.com/your-org/reviveforge.git
+   cd reviveforge
+   ```
+2. **Install dependencies:**
+   ```sh
+   pnpm install
+   ```
+3. **Set environment variables:**
+   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
+   - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+   - `OPENAI_API_KEY`
+   - `RESEND_API_KEY`
+   - `GITHUB_TOKEN`
+   - `SENTRY_DSN`
+   - (see `.env.example`)
+
+## Running Locally
+- **Dev server:**
+  ```sh
+  pnpm dev
+  ```
+- **Run all tests:**
+  ```sh
+  pnpm test:unit && pnpm test:integration
+  ```
+- **Lint & type-check:**
+  ```sh
+  pnpm lint && pnpm type-check
+  ```
+
+## Dev > Hydration Guardrails
+
+• `npm run build:hydration && npm run hydration:scan` catches server‑side browser code.<br>
+• `npm run test:hydration` launches the built app in headless Chrome and fails if React logs a mismatch.
 
 ## Deployment
+- Deploys automatically to Vercel on push to `main` (see `.github/workflows/ci.yml`).
+- Configure Vercel project with all required environment variables.
 
-Your project is live at:
+## API Documentation
+- OpenAPI spec: [`/openapi.yaml`](./openapi.yaml)
+- Swagger UI: [`/api/docs`](./app/api/docs)
 
-**[https://vercel.com/mariosris-projects/v0-image-analysis](https://vercel.com/mariosris-projects/v0-image-analysis)**
+## Contributing
+- Fork, branch, and PRs welcome!
+- Please add/extend tests for new features.
 
-## Build your app
+## License
+MIT
 
-Continue building your app on:
+## Accessibility & Performance
 
-**[https://v0.dev/chat/projects/Mwcp6uDYp9M](https://v0.dev/chat/projects/Mwcp6uDYp9M)**
+- Run `npm run lhci` and `npm run test:a11y` before PR merge.
+- Budgets: performance ≥ 90, accessibility ≥ 90 on Home & Marketplace.
+- CI will fail if Lighthouse or axe-core/Playwright finds issues.
 
-## How It Works
+[![Upvote on Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/placeholder.svg?post_id=000000&theme=light)](https://www.producthunt.com/posts/reviveforge-TODO)
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+## Launch
+
+Before merging to `main`, you must complete the [Launch QA Checklist](./docs/LAUNCH_QA_CHECKLIST.md).
+
+A GitHub Action ([`.github/workflows/checklist.yml`](./.github/workflows/checklist.yml)) will block PRs if any checklist item remains unchecked. Work through the checklist as a team to ensure ReviveForge is truly launch‑ready.
+
+## Investor Deck
+
+- [View the deck](docs/INVESTOR_DECK.md)
+- To export as PowerPoint: run `npm run slides:export` (requires @marp-team/marp-cli)

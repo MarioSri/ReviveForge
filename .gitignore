@@ -28,3 +28,4 @@ next-env.d.ts
 
 # Hydration scanner build artifact
 dist/scan-hydration-issues.js
+.env
